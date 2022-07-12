@@ -1,0 +1,33 @@
+build_env:
+  image: python:latest
+  script:
+    - python --version
+    - pip --version
+    - pip install pytest
+    - pytest --version
+    - echo "Build Environment"
+
+run_test:
+  stage: test
+  image: $CI_REGISTRY_IMAGE
+  script:
+    - pip install coverage
+    - coverage run -m unittest coverageUnittest.py
+    - coverage report
+
+build_image:
+  stage: build
+  image: docker:20.10.16
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_HOST: tcp://docker:2375/
+    DOCKER_DRIVER: overlay2
+  services:
+  - docker:20.10.16-dind
+  before_script:
+  - docker info
+  script:
+   - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin
+   - docker build -t $CI_REGISTRY_IMAGE .
+   - docker push $CI_REGISTRY_IMAGE
+
